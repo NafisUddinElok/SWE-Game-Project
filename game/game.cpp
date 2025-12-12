@@ -9,6 +9,7 @@ int ROAD_SPEED = 5;
 int PLAYER_SPEED = 10;
 int OPPONENT_SPEED = 8;
 int ROAD_WIDTH = 400;
+bool collisionOccured = false;
 bool quit = false;
 SDL_Event event;
 
@@ -24,6 +25,9 @@ SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer) {
     return texture;
 }
 
+bool checkCollision(const SDL_Rect& rect1, const SDL_Rect& rect2) {
+    return SDL_HasIntersection(&rect1, &rect2);
+}
 int main(int argc, char* argv[])
 {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -61,10 +65,10 @@ int main(int argc, char* argv[])
     SDL_Texture* carTexture = loadTexture("Images/car.png", renderer);
     SDL_Texture *carOpp1Texture = loadTexture("Images/caropp1.png", renderer);
     SDL_Texture *carOpp2Texture = loadTexture("Images/caropp2.png", renderer);
-
+    SDL_Texture *explosionTexture = loadTexture("Images/explosion.png", renderer);
     
-    if (!roadTexture || !grassTexture || !carTexture || !carOpp1Texture || !carOpp2Texture) {
-        cout << "Road texture or grass or car or opponenet car texture or car texture has not been loaded";
+    if (!roadTexture || !grassTexture || !carTexture || !carOpp1Texture || !carOpp2Texture || !explosionTexture) {
+        cout << "some texture might not have been loaded";
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -86,7 +90,7 @@ int main(int argc, char* argv[])
     SDL_Rect opponentCar1 = {(WINDOW_WIDTH-ROAD_WIDTH)/2 + rand() % (ROAD_WIDTH - 50), -120, 50, 100};
     SDL_Rect opponentCar2 = { (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50), -300, 50, 100 };
 
-
+    SDL_Rect explosionRect;
     // game loop 
     while (!quit) {
         while (SDL_PollEvent(&event)) {
@@ -112,53 +116,60 @@ int main(int argc, char* argv[])
             }
         }
 
-        // move road (scrolling logic)
-        road1.y += ROAD_SPEED;
-        road2.y += ROAD_SPEED;
+        if (!collisionOccured) {
+            // move road (scrolling logic)
+            road1.y += ROAD_SPEED;
+            road2.y += ROAD_SPEED;
 
-        grass1Left.y += ROAD_SPEED;
-        grass2Left.y += ROAD_SPEED;
+            grass1Left.y += ROAD_SPEED;
+            grass2Left.y += ROAD_SPEED;
 
-        grass1Right.y += ROAD_SPEED;
-        grass2Right.y += ROAD_SPEED;
+            grass1Right.y += ROAD_SPEED;
+            grass2Right.y += ROAD_SPEED;
 
 
 
-        if (road1.y >= WINDOW_HEIGHT) {
-            road1.y = road2.y - WINDOW_HEIGHT;
+            if (road1.y >= WINDOW_HEIGHT) {
+                road1.y = road2.y - WINDOW_HEIGHT;
+            }
+            if (road2.y >= WINDOW_HEIGHT) {
+                road2.y = road1.y - WINDOW_HEIGHT;
+            }
+
+            if (grass1Left.y >= WINDOW_HEIGHT) {
+                grass1Left.y = grass2Left.y - WINDOW_HEIGHT;
+            }
+            if (grass2Left.y >= WINDOW_HEIGHT) {
+                grass2Left.y = grass1Left.y - WINDOW_HEIGHT;
+            }
+
+            if (grass1Right.y >= WINDOW_HEIGHT) {
+                grass1Right.y = grass2Right.y - WINDOW_HEIGHT;
+            }
+            if (grass2Right.y >= WINDOW_HEIGHT) {
+                grass2Right.y = grass1Right.y - WINDOW_HEIGHT;
+            }
+
+            opponentCar1.y += OPPONENT_SPEED;
+            opponentCar2.y += OPPONENT_SPEED;
+
+            if (opponentCar1.y > WINDOW_HEIGHT) {
+                opponentCar1.y = -120;
+                opponentCar1.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
+            }
+
+            if (opponentCar2.y > WINDOW_HEIGHT) {
+                opponentCar2.y = -300;
+                opponentCar2.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
+            }
+
+            if (checkCollision(playerCar, opponentCar1) || checkCollision(playerCar, opponentCar2)) {
+                collisionOccured = true;
+                explosionRect = playerCar;
+            }
+
         }
-        if (road2.y >= WINDOW_HEIGHT) {
-            road2.y = road1.y - WINDOW_HEIGHT;
-        }
-
-        if (grass1Left.y >= WINDOW_HEIGHT) {
-            grass1Left.y = grass2Left.y - WINDOW_HEIGHT;
-        }
-        if(grass2Left.y >= WINDOW_HEIGHT) {
-            grass2Left.y = grass1Left.y - WINDOW_HEIGHT;
-        }
-
-        if (grass1Right.y >= WINDOW_HEIGHT) {
-            grass1Right.y = grass2Right.y - WINDOW_HEIGHT;
-        }
-        if (grass2Right.y >= WINDOW_HEIGHT) {
-            grass2Right.y = grass1Right.y - WINDOW_HEIGHT;
-        }
-
-        opponentCar1.y += OPPONENT_SPEED;
-        opponentCar2.y += OPPONENT_SPEED;
-
-        if (opponentCar1.y > WINDOW_HEIGHT) {
-            opponentCar1.y = -120;
-            opponentCar1.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
-        }
-
-        if (opponentCar2.y > WINDOW_HEIGHT) {
-            opponentCar2.y = -300;
-            opponentCar2.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
-        }
-
-
+        
 
         //Render out everything
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -178,7 +189,9 @@ int main(int argc, char* argv[])
         SDL_RenderCopy(renderer, carOpp1Texture, NULL, &opponentCar1);
         SDL_RenderCopy(renderer, carOpp2Texture, NULL, &opponentCar2);
 
-
+        if (collisionOccured) {
+            SDL_RenderCopy(renderer, explosionTexture, NULL, &explosionRect);
+        }
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16); // approx 60 frame per second
