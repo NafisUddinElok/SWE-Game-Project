@@ -99,7 +99,8 @@ int main(int argc, char* argv[])
             }
             else if (event.type == SDL_KEYDOWN) {
                 
-                switch (event.key.keysym.sym) {
+                if (!collisionOccured) {
+                    switch (event.key.keysym.sym) {
                     case SDLK_LEFT:
                         if (playerCar.x > (WINDOW_WIDTH - ROAD_WIDTH) / 2) {
                             playerCar.x -= PLAYER_SPEED;
@@ -111,9 +112,20 @@ int main(int argc, char* argv[])
                             playerCar.x += PLAYER_SPEED;
                         }
                         break;
-                        
+
+                    }
                 }
+                
             }
+        }
+        if (playerCar.x < (WINDOW_WIDTH - ROAD_WIDTH) / 2) {
+            collisionOccured = true;
+            explosionRect = playerCar;
+        }
+
+        if (playerCar.x + playerCar.w > (WINDOW_WIDTH + ROAD_WIDTH) / 2) {
+            collisionOccured = true;
+            explosionRect = playerCar;
         }
 
         if (!collisionOccured) {
