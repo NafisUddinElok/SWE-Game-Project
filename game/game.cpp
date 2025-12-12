@@ -6,6 +6,7 @@ using namespace std;
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 int ROAD_SPEED = 5;
+int PLAYER_SPEED = 10;
 int ROAD_WIDTH = 400;
 bool quit = false;
 SDL_Event event;
@@ -56,8 +57,11 @@ int main(int argc, char* argv[])
 
     SDL_Texture *roadTexture = loadTexture("Images/road1.jpg", renderer); // also 
     SDL_Texture *grassTexture = loadTexture("Images/longtree1.jpg", renderer);
-    if (!roadTexture || !grassTexture) {
-        cout << "Road texture or grass texture has not been loaded";
+    SDL_Texture* carTexture = loadTexture("Images/car.png", renderer);
+    
+    
+    if (!roadTexture || !grassTexture || !carTexture) {
+        cout << "Road texture or grass texture or car texture has not been loaded";
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -74,17 +78,37 @@ int main(int argc, char* argv[])
     SDL_Rect grass1Right = { (WINDOW_WIDTH + ROAD_WIDTH) / 2, 0, (WINDOW_WIDTH - ROAD_WIDTH)/ 2, WINDOW_HEIGHT };
     SDL_Rect grass2Right= { (WINDOW_WIDTH + ROAD_WIDTH) / 2, -WINDOW_HEIGHT, (WINDOW_WIDTH - ROAD_WIDTH) / 2, WINDOW_HEIGHT };
 
+
+    SDL_Rect playerCar = {(WINDOW_WIDTH-50)/2, WINDOW_HEIGHT - 120, 50, 100};
+
+
+
     // game loop 
     while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
+            else if (event.type == SDL_KEYDOWN) {
+                
+                switch (event.key.keysym.sym) {
+                    case SDLK_LEFT:
+                        if (playerCar.x > (WINDOW_WIDTH - ROAD_WIDTH) / 2) {
+                            playerCar.x -= PLAYER_SPEED;
+                        }
+                        break;
+
+                    case SDLK_RIGHT:
+                        if (playerCar.x < (WINDOW_WIDTH + ROAD_WIDTH) / 2 - playerCar.w) {
+                            playerCar.x += PLAYER_SPEED;
+                        }
+                        break;
+                        
+                }
+            }
         }
 
         // move road (scrolling logic)
-        /**
-        */
         road1.y += ROAD_SPEED;
         road2.y += ROAD_SPEED;
 
@@ -116,9 +140,6 @@ int main(int argc, char* argv[])
         }
 
 
-
-
-
         //Render out everything
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -132,11 +153,14 @@ int main(int argc, char* argv[])
         SDL_RenderCopy(renderer, grassTexture, NULL, &grass1Right);
         SDL_RenderCopy(renderer, grassTexture, NULL, &grass2Right);
 
+        SDL_RenderCopy(renderer, carTexture, NULL, &playerCar);
+
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16); // approx 60 frame per second
     }
     SDL_DestroyTexture(roadTexture);
+    SDL_DestroyTexture(carTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
