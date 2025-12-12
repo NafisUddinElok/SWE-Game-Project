@@ -1,6 +1,8 @@
 #include <SDL.h>
 #include <iostream>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
+#include <sstream>
 using namespace std;
 
 const int WINDOW_WIDTH = 800;
@@ -8,6 +10,7 @@ const int WINDOW_HEIGHT = 600;
 int ROAD_SPEED = 5;
 int PLAYER_SPEED = 10;
 int OPPONENT_SPEED = 8;
+int SCORE = 0;
 int ROAD_WIDTH = 400;
 bool collisionOccured = false;
 bool quit = false;
@@ -25,12 +28,30 @@ SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer) {
     return texture;
 }
 
+void renderText(const string& text, int x, int y, SDL_Renderer* renderer, TTF_Font* font) {
+    SDL_Color white = {255, 255, 255};
+    SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect destRect = {x, y, 50, 30};
+    SDL_RenderCopy(renderer, texture, NULL, &destRect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+
+}
+
+string intToString(int value) {
+    ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
 bool checkCollision(const SDL_Rect& rect1, const SDL_Rect& rect2) {
     return SDL_HasIntersection(&rect1, &rect2);
 }
 int main(int argc, char* argv[])
 {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0 || TTF_Init() < 0) {
         cout << "SDL Init Error: " << SDL_GetError() << endl;
         return 1;
     }
@@ -67,6 +88,16 @@ int main(int argc, char* argv[])
     SDL_Texture *carOpp2Texture = loadTexture("Images/caropp2.png", renderer);
     SDL_Texture *explosionTexture = loadTexture("Images/explosion.png", renderer);
     
+    TTF_Font *font =  TTF_OpenFont("ARIAL.TTF", 25);
+    
+    if (!font) {
+        cout << "Failed to open font ttf" << endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return -1;
+    }
+
     if (!roadTexture || !grassTexture || !carTexture || !carOpp1Texture || !carOpp2Texture || !explosionTexture) {
         cout << "some texture might not have been loaded";
         SDL_DestroyRenderer(renderer);
@@ -75,7 +106,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    SDL_Rect road1 = {(WINDOW_WIDTH - ROAD_WIDTH)/2, 0, ROAD_WIDTH, WINDOW_HEIGHT};
+    SDL_Rect road1 = { (WINDOW_WIDTH - ROAD_WIDTH) / 2, 0, ROAD_WIDTH, WINDOW_HEIGHT};
     SDL_Rect road2 = { (WINDOW_WIDTH - ROAD_WIDTH) / 2, -WINDOW_HEIGHT, ROAD_WIDTH, WINDOW_HEIGHT};
     
     SDL_Rect grass1Left = {0, 0, (WINDOW_WIDTH - ROAD_WIDTH) / 2, WINDOW_HEIGHT};
@@ -166,16 +197,19 @@ int main(int argc, char* argv[])
             opponentCar2.y += OPPONENT_SPEED;
 
             if (opponentCar1.y > WINDOW_HEIGHT) {
+                SCORE++;
                 opponentCar1.y = -120;
                 opponentCar1.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
             }
 
             if (opponentCar2.y > WINDOW_HEIGHT) {
+                SCORE++;
                 opponentCar2.y = -300;
                 opponentCar2.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
             }
 
             if (checkCollision(playerCar, opponentCar1) || checkCollision(playerCar, opponentCar2)) {
+                
                 collisionOccured = true;
                 explosionRect = playerCar;
             }
@@ -203,6 +237,9 @@ int main(int argc, char* argv[])
 
         if (collisionOccured) {
             SDL_RenderCopy(renderer, explosionTexture, NULL, &explosionRect);
+        }
+        else {
+            renderText("Score : " + intToString(SCORE), WINDOW_WIDTH-200,10, renderer, font);
         }
         SDL_RenderPresent(renderer);
 
