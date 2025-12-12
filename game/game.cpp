@@ -7,6 +7,7 @@ const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 int ROAD_SPEED = 5;
 int PLAYER_SPEED = 10;
+int OPPONENT_SPEED = 8;
 int ROAD_WIDTH = 400;
 bool quit = false;
 SDL_Event event;
@@ -58,10 +59,12 @@ int main(int argc, char* argv[])
     SDL_Texture *roadTexture = loadTexture("Images/road1.jpg", renderer); // also 
     SDL_Texture *grassTexture = loadTexture("Images/longtree1.jpg", renderer);
     SDL_Texture* carTexture = loadTexture("Images/car.png", renderer);
+    SDL_Texture *carOpp1Texture = loadTexture("Images/caropp1.png", renderer);
+    SDL_Texture *carOpp2Texture = loadTexture("Images/caropp2.png", renderer);
+
     
-    
-    if (!roadTexture || !grassTexture || !carTexture) {
-        cout << "Road texture or grass texture or car texture has not been loaded";
+    if (!roadTexture || !grassTexture || !carTexture || !carOpp1Texture || !carOpp2Texture) {
+        cout << "Road texture or grass or car or opponenet car texture or car texture has not been loaded";
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -80,7 +83,8 @@ int main(int argc, char* argv[])
 
 
     SDL_Rect playerCar = {(WINDOW_WIDTH-50)/2, WINDOW_HEIGHT - 120, 50, 100};
-
+    SDL_Rect opponentCar1 = {(WINDOW_WIDTH-ROAD_WIDTH)/2 + rand() % (ROAD_WIDTH - 50), -120, 50, 100};
+    SDL_Rect opponentCar2 = { (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50), -300, 50, 100 };
 
 
     // game loop 
@@ -118,6 +122,8 @@ int main(int argc, char* argv[])
         grass1Right.y += ROAD_SPEED;
         grass2Right.y += ROAD_SPEED;
 
+
+
         if (road1.y >= WINDOW_HEIGHT) {
             road1.y = road2.y - WINDOW_HEIGHT;
         }
@@ -139,6 +145,20 @@ int main(int argc, char* argv[])
             grass2Right.y = grass1Right.y - WINDOW_HEIGHT;
         }
 
+        opponentCar1.y += OPPONENT_SPEED;
+        opponentCar2.y += OPPONENT_SPEED;
+
+        if (opponentCar1.y > WINDOW_HEIGHT) {
+            opponentCar1.y = -120;
+            opponentCar1.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
+        }
+
+        if (opponentCar2.y > WINDOW_HEIGHT) {
+            opponentCar2.y = -300;
+            opponentCar2.x = (WINDOW_WIDTH - ROAD_WIDTH) / 2 + rand() % (ROAD_WIDTH - 50);
+        }
+
+
 
         //Render out everything
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -155,10 +175,19 @@ int main(int argc, char* argv[])
 
         SDL_RenderCopy(renderer, carTexture, NULL, &playerCar);
 
+        SDL_RenderCopy(renderer, carOpp1Texture, NULL, &opponentCar1);
+        SDL_RenderCopy(renderer, carOpp2Texture, NULL, &opponentCar2);
+
+
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16); // approx 60 frame per second
     }
+    SDL_DestroyTexture(grassTexture);
+    SDL_DestroyTexture(carTexture);
+    SDL_DestroyTexture(carOpp1Texture);
+    SDL_DestroyTexture(carOpp2Texture);
+
     SDL_DestroyTexture(roadTexture);
     SDL_DestroyTexture(carTexture);
     SDL_DestroyRenderer(renderer);
